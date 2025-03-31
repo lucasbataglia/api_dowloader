@@ -7,7 +7,7 @@ from urllib.parse import unquote, urlparse
 
 app = Flask(__name__)
 DOWNLOAD_FOLDER = 'downloads'
-PROXY_FILE = 'webshare 50 proxies.txt'
+PROXY_FILE = 'webshare_50_proxies.txt'
 proxies_list = []
 
 # Garante que o diretório de downloads exista
