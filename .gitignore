@@ -1,0 +1,9 @@
+# Ambiente Virtual
+    venv/
+    __pycache__/
+    *.pyc
+
+    # Arquivos de configuração local/sensíveis
+    *.env
+    webshare 50 proxies.txt
+    downloads/
