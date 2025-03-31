@@ -1,13 +1,48 @@
 import os
 import sys
 import requests
+import random # Importa o módulo random
 from flask import Flask, request, jsonify, send_from_directory, url_for
 from urllib.parse import unquote, urlparse
 
 app = Flask(__name__)
 DOWNLOAD_FOLDER = 'downloads'
+PROXY_FILE = 'webshare 50 proxies.txt'
+proxies_list = []
+
 # Garante que o diretório de downloads exista
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
+
+# --- Carregamento dos Proxies ---
+def load_proxies(filename):
+    """Lê o arquivo de proxies e formata para uso com requests."""
+    loaded_proxies = []
+    try:
+        with open(filename, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    parts = line.split(':')
+                    if len(parts) == 4:
+                        ip, port, user, pwd = parts
+                        # Formato: http://usuario:senha@host:porta
+                        proxy_url = f"http://{user}:{pwd}@{ip}:{port}"
+                        loaded_proxies.append(proxy_url)
+                    else:
+                        print(f"Formato inválido na linha do proxy: {line}")
+        print(f"Carregados {len(loaded_proxies)} proxies de {filename}")
+        return loaded_proxies
+    except FileNotFoundError:
+        print(f"Erro: Arquivo de proxy '{filename}' não encontrado.")
+        return []
+    except Exception as e:
+        print(f"Erro ao ler arquivo de proxy '{filename}': {e}")
+        return []
+
+# Carrega os proxies na inicialização da aplicação
+proxies_list = load_proxies(PROXY_FILE)
+# --- Fim Carregamento dos Proxies ---
+
 
 def sanitize_filename(filename):
     """Remove caracteres inválidos e limita o tamanho do nome do arquivo."""
@@ -88,10 +123,25 @@ def download_file():
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36', # User agent do script original
     }
 
+    # --- Seleção do Proxy ---
+    selected_proxy_url = None
+    proxies_config = None
+    if proxies_list:
+        selected_proxy_url = random.choice(proxies_list)
+        proxies_config = {
+            "http": selected_proxy_url,
+            "https": selected_proxy_url,
+        }
+        print(f"Usando proxy selecionado: {selected_proxy_url.split('@')[1] if '@' in selected_proxy_url else selected_proxy_url}") # Não logar credenciais
+    else:
+        print("Nenhuma lista de proxies carregada. Tentando sem proxy.")
+    # --- Fim Seleção do Proxy ---
+
     try:
         print(f"Tentando baixar de: {url}")
         print(f"Salvando como: {output_filename}")
-        response = requests.get(url, headers=headers, stream=True, timeout=300) # Timeout de 5 minutos
+        # Adiciona o parâmetro 'proxies' à requisição com o proxy selecionado
+        response = requests.get(url, headers=headers, stream=True, timeout=300, proxies=proxies_config) # Timeout de 5 minutos
         response.raise_for_status() # Verifica se houve erro HTTP (status code >= 400)
 
         total_size = response.headers.get('content-length')
