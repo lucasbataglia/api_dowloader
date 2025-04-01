@@ -8,6 +8,21 @@ from flask import Flask, request, jsonify, send_from_directory, url_for
 from urllib.parse import unquote, urlparse
 
 app = Flask(__name__)
+
+# --- Bloco para determinar IP de Saída ---
+try:
+    print("DEBUG: Tentando determinar o IP de saída...")
+    # Usa um timeout razoável para a chamada externa
+    ip_response = requests.get('https://api.ipify.org?format=json', timeout=10)
+    ip_response.raise_for_status() # Verifica se houve erro na requisição HTTP
+    public_ip = ip_response.json().get('ip')
+    print(f"############################################")
+    print(f"DEBUG: IP de Saída Detectado (Render): {public_ip}")
+    print(f"############################################")
+except Exception as e:
+    print(f"DEBUG: Não foi possível determinar o IP de Saída: {e}")
+# --- Fim Bloco IP de Saída ---
+
 DOWNLOAD_FOLDER = 'downloads'
 # Lê o caminho do arquivo de proxy da variável de ambiente, com um fallback local
 PROXY_FILE_PATH = os.environ.get('PROXY_FILE_PATH', 'webshare 50 proxies.txt') # Fallback com espaço
